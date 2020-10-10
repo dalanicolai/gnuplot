@@ -2293,11 +2293,19 @@ defaults to 3.7."
     (message "gnuplot-mode %s -- determining gnuplot version ......"
              gnuplot-version)
     (with-temp-buffer
-      (insert "show version")
-      (call-process-region (point-min) (point-max)
-                           gnuplot-program t (current-buffer))
+      (let* ((linux (eq system-type 'gnu/linux))
+             (search-pattern (if linux
+                                 "gnuplot "
+                               "[Vv]ersion\\s-+")))
+        (if linux
+            (insert (shell-command-to-string "gnuplot -V"))
+          (insert "show version")
+          (call-process-region (point-min) (point-max)
+                               gnuplot-program
+                               t
+                               (current-buffer)))
       (goto-char (point-min))
-      (if (and (re-search-forward "[Vv]ersion\\s-+" (point-max) t)
+      (if (and (re-search-forward search-pattern (point-max) t)
                (looking-at "\\([0-9]\\)\\.\\([0-9]+\\)"))
           (progn
             (setq gnuplot-program-version (match-string 0)
@@ -2316,7 +2324,7 @@ defaults to 3.7."
               gnuplot-three-eight-p nil)))
 
     ;; Setup stuff that depends on version number
-    (gnuplot-setup-menu-and-toolbar)))
+    (gnuplot-setup-menu-and-toolbar))))
 
 (defun gnuplot-setup-menu-and-toolbar ()
   "Setup stuff that depends on version number."
